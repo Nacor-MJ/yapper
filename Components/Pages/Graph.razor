@@ -1,0 +1,48 @@
+﻿@page "/graph"
+@rendermode InteractiveServer
+@using Syncfusion.Blazor.Charts
+
+<PageTitle>Graph</PageTitle>
+
+<h3>Graph</h3>
+<button class="btn btn-primary" @onclick="Clear">clear</button>
+<button class="btn btn-primary" @onclick="AddModel">add model</button>
+<br>
+<SfChart>
+    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" Format="dd MMM" />
+    @foreach (var model in Models)
+    {
+        <ChartSeriesCollection>
+            <ChartSeries DataSource="@model.Simulate()" XName="XValue" YName="YValue" Type="ChartSeriesType.Line" />
+        </ChartSeriesCollection>
+    }
+</SfChart>
+<h3>boobs</h3>
+@code {
+    WealthModel[] Models = [];
+    WealthModel Builder = new();
+    private void Clear()
+    {
+        Models = [];
+    }
+    private void AddModel()
+    {
+        Models.Append(Builder);
+        Builder = new();
+    }
+
+    public class ChartData
+    {
+        public DateTime XValue { get; set; }
+        public double YValue { get; set; }
+    }
+
+    public class WealthModel
+    {
+        public List<ChartData> Simulate()
+        {
+            List<ChartData> series = new();
+            return series;
+        }
+    }
+}
