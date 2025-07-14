@@ -12,7 +12,7 @@
 <SfChart>
     <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" Format="dd MMM" />
     <ChartSeriesCollection>
-        @foreach (WealthModel model in Models)
+        @foreach (Simulator model in Models)
         {
             <ChartSeries DataSource="@model.Simulate()" PointColorMapping="blue" XName="Date" YName="Wealth"
                 Type="ChartSeriesType.Line" />
@@ -29,14 +29,14 @@
     <!-- TODO: make expandable overview of the model, delete just one model -->
 }
 
-<label>Montlhy Income:</label> <input @bind="Builder.MontlhyIncome" /> <br>
-<label>Starting Capital:</label> <input @bind="Builder.StartingCapital" /> <br>
-<label>Wealth Cap:</label> <input @bind="Builder.WealthCap" /> <br>
+<label>Montlhy Income:</label> <input @bind="Simulant.Victim.MontlhyIncome" /> <br>
+<label>Starting Capital:</label> <input @bind="Simulant.Victim.StartingCapital" /> <br>
+<label>Wealth Cap:</label> <input @bind="Simulant.Victim.WealthCap" /> <br>
 @code {
-    List<WealthModel> Models = [];
+    List<Simulator> Models = [];
 
-    // Reflects the UI state
-    WealthModel Builder = new();
+    /// the work in progress simulator
+    Simulator Simulant = new Simulator(new());
 
     private void Clear()
     {
@@ -44,8 +44,8 @@
     }
     private void AddModel()
     {
-        Models.Add(Builder);
-        Builder = new();
+        Models.Add(Simulant);
+        Simulant = new Simulator(new());
     }
 
     private class ChartData
@@ -130,7 +130,7 @@
         }
     }
 
-    private class WealthModel : Asset
+    private class AWorkingPerson : Asset
     {
         public double StartingCapital = 0;
         public double MontlhyIncome = 10_000;
@@ -144,11 +144,11 @@
     }
     private class Simulator
     {
-        private Asset Simulant;
+        public AWorkingPerson Victim;
         public double WealthGoal = 1_000_000;
-        public Simulator(Asset simulant)
+        public Simulator(AWorkingPerson simulant)
         {
-            Simulant = simulant;
+            Victim = simulant;
         }
         public List<ChartData> Simulate()
         {
@@ -157,9 +157,9 @@
 
             for (int i = 0; i < 12 * 30; i++)
             {
-                Simulant.AdvanceByMonth();
+                Victim.AdvanceByMonth();
                 data.Add(
-                new ChartData(today.AddMonths(i), Simulant.TotalBalance)
+                new ChartData(today.AddMonths(i), Victim.TotalBalance)
                 );
             }
 
