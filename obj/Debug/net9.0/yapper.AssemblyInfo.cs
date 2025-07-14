@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("yapper")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed5e1f410667df6bc331540af638ea56f67fdd4f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dec4783589952b30416dfbf2133512404de38c3a")]
 [assembly: System.Reflection.AssemblyProductAttribute("yapper")]
 [assembly: System.Reflection.AssemblyTitleAttribute("yapper")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

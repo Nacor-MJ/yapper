@@ -26,6 +26,7 @@
 {
     <button type="button">Model @(i + 1)</button>
     <br>
+    <!-- TODO: make expandable overview of the model, delete just one model -->
 }
 
 <label>Montlhy Income:</label> <input @bind="Builder.MontlhyIncome" /> <br>
@@ -58,32 +59,108 @@
         public double Wealth { get; set; }
     }
 
-    private class WealthModel
+    /// Represents something that generates income
+    ///
+    /// Assets can own other assets but their balances are seperate
+    private class Asset
+    {
+        /// represents the ammount of money invested in this asset
+        public double Balance;
+        /// assets managed by this asset
+        public List<Asset> Assets = new();
+        /// Advances the balance of the assets and own profit by a month
+        public void AdvanceByMonth()
+        {
+            foreach (Asset asset in Assets)
+            {
+                asset.AdvanceByMonth();
+            }
+            AddOwnMontlyProfit();
+        }
+
+        /// Pure profit excluding assets
+        public virtual void AddOwnMontlyProfit()
+        {
+            // default balance stays the same
+        }
+
+        /// Moves `ammount` of money into `destination`
+        /// usefull for monthly expenditures like moving money into a savings account
+        /// Exceptions:
+        /// raises an OutOfBound exception if balance is too low
+        public void Move(double ammount, Asset destination)
+        {
+            if (Balance < ammount)
+            {
+                throw new System.ArgumentOutOfRangeException(
+                $"Balance : {Balance} is less than requested move ammount {ammount}"
+                );
+            }
+            Balance -= ammount;
+            destination.Balance += ammount;
+        }
+
+        /// calculates the recursive ballance of all owned assets + self
+        public double TotalBalance
+        {
+            get
+            {
+                double _runningTotal = Balance;
+                foreach (Asset asset in Assets)
+                {
+                    _runningTotal += asset.TotalBalance;
+                }
+                return _runningTotal;
+            }
+        }
+    }
+
+    private class SavingsAccount : Asset
+    {
+        /// The Yearly Interest Rate In %
+        private double InterestRate = 5;
+        private double GetMonthlyInterestRate()
+        {
+            return Math.Pow(1 + InterestRate, 1.0 / 12.0) - 1;
+        }
+
+        public override void AddOwnMontlyProfit()
+        {
+            Balance *= (1 + GetMonthlyInterestRate());
+        }
+    }
+
+    private class WealthModel : Asset
     {
         public double StartingCapital = 0;
-        public double MontlhyIncome = 0;
+        public double MontlhyIncome = 10_000;
         public double WealthCap = 10_000_000;
 
+        public override void AddOwnMontlyProfit()
+        {
+            Balance += MontlhyIncome;
+        }
+
+    }
+    private class Simulator
+    {
+        private Asset Simulant;
+        public double WealthGoal = 1_000_000;
+        public Simulator(Asset simulant)
+        {
+            Simulant = simulant;
+        }
         public List<ChartData> Simulate()
         {
             List<ChartData> data = new();
-            DateTime currentDay = DateTime.Today;
+            DateTime today = DateTime.Today;
 
-            double currentWealth = 0;
-
-            for (int i = 0; currentWealth < WealthCap && i < 12 * 30; i++)
+            for (int i = 0; i < 12 * 30; i++)
             {
-                double expenses = 0;
-                currentWealth += MontlhyIncome - expenses;
-
-                try
-                {
-                    data.Add(new ChartData(currentDay.AddMonths(i), currentWealth));
-                }
-                catch (System.ArgumentOutOfRangeException)
-                {
-                    break;
-                }
+                Simulant.AdvanceByMonth();
+                data.Add(
+                new ChartData(today.AddMonths(i), Simulant.TotalBalance)
+                );
             }
 
             return data;
