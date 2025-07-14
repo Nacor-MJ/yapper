@@ -1,5 +1,6 @@
 ﻿@page "/graph"
 @rendermode InteractiveServer
+@inject ILogger<Graph> Logger
 @using Syncfusion.Blazor.Charts
 
 <PageTitle>Graph</PageTitle>
@@ -10,39 +11,82 @@
 <br>
 <SfChart>
     <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" Format="dd MMM" />
-    @foreach (var model in Models)
-    {
-        <ChartSeriesCollection>
-            <ChartSeries DataSource="@model.Simulate()" XName="XValue" YName="YValue" Type="ChartSeriesType.Line" />
-        </ChartSeriesCollection>
-    }
+    <ChartSeriesCollection>
+        @foreach (WealthModel model in Models)
+        {
+            <ChartSeries DataSource="@model.Simulate()" PointColorMapping="blue" XName="Date" YName="Wealth"
+                Type="ChartSeriesType.Line" />
+        }
+    </ChartSeriesCollection>
 </SfChart>
-<h3>boobs</h3>
+
+<label>Model count: @Models.Count</label> <br>
+
+@for (int i = 0; i < Models.Count; i++)
+{
+    <button type="button">Model @(i + 1)</button>
+    <br>
+}
+
+<label>Montlhy Income:</label> <input @bind="Builder.MontlhyIncome" /> <br>
+<label>Starting Capital:</label> <input @bind="Builder.StartingCapital" /> <br>
+<label>Wealth Cap:</label> <input @bind="Builder.WealthCap" /> <br>
 @code {
-    WealthModel[] Models = [];
+    List<WealthModel> Models = [];
+
+    // Reflects the UI state
     WealthModel Builder = new();
+
     private void Clear()
     {
         Models = [];
     }
     private void AddModel()
     {
-        Models.Append(Builder);
+        Models.Add(Builder);
         Builder = new();
     }
 
-    public class ChartData
+    private class ChartData
     {
-        public DateTime XValue { get; set; }
-        public double YValue { get; set; }
+        public ChartData(DateTime date, double wealth)
+        {
+            Date = date;
+            Wealth = wealth;
+        }
+        public DateTime Date { get; set; }
+        public double Wealth { get; set; }
     }
 
-    public class WealthModel
+    private class WealthModel
     {
+        public double StartingCapital = 0;
+        public double MontlhyIncome = 0;
+        public double WealthCap = 10_000_000;
+
         public List<ChartData> Simulate()
         {
-            List<ChartData> series = new();
-            return series;
+            List<ChartData> data = new();
+            DateTime currentDay = DateTime.Today;
+
+            double currentWealth = 0;
+
+            for (int i = 0; currentWealth < WealthCap && i < 12 * 30; i++)
+            {
+                double expenses = 0;
+                currentWealth += MontlhyIncome - expenses;
+
+                try
+                {
+                    data.Add(new ChartData(currentDay.AddMonths(i), currentWealth));
+                }
+                catch (System.ArgumentOutOfRangeException)
+                {
+                    break;
+                }
+            }
+
+            return data;
         }
     }
 }
