@@ -29,24 +29,38 @@
     <!-- TODO: make expandable overview of the model, delete just one model -->
 }
 
-<label>Montlhy Income:</label> <input @bind="Simulant.Victim.MontlhyIncome" /> <br>
-<label>Starting Capital:</label> <input @bind="Simulant.Victim.StartingCapital" /> <br>
-<label>Wealth Cap:</label> <input @bind="Simulant.Victim.WealthCap" /> <br>
+<input type="checkbox" @bind="Checked" @onclick="TogglePersonCheckBox">
+<label> A Real Person:</label><br>
+@if (Simulant.Victim != null) {
+    <label>Montlhy Income:</label> <input @bind="Simulant.Victim.MontlhyIncome" /> <br>
+    <label>Starting Capital:</label> <input @bind="Simulant.Victim.StartingCapital" /> <br>
+    <label>Wealth Cap:</label> <input @bind="Simulant.Victim.WealthCap" /> <br>
+}
 @code {
     List<Simulator> Models = [];
 
     /// the work in progress simulator
-    Simulator Simulant = new Simulator(new());
+    Simulator Simulant = new();
 
+    private bool Checked = false;
+    private void TogglePersonCheckBox() {
+        if (Checked) {
+            Simulant.Victim = null;
+        } else {
+            Simulant.Victim = new();
+        }
+    }
     private void Clear()
     {
         Models = [];
     }
     private void AddModel()
     {
+        Checked=false;
         Models.Add(Simulant);
-        Simulant = new Simulator(new());
+        Simulant = new();
     }
+
 
     private class ChartData
     {
@@ -144,16 +158,17 @@
     }
     private class Simulator
     {
-        public AWorkingPerson Victim;
+        public AWorkingPerson? Victim;
         public double WealthGoal = 1_000_000;
-        public Simulator(AWorkingPerson simulant)
-        {
-            Victim = simulant;
-        }
         public List<ChartData> Simulate()
         {
             List<ChartData> data = new();
             DateTime today = DateTime.Today;
+
+            if (Victim == null) {
+                return data;
+            }
+            Victim.Balance = Victim.StartingCapital;
 
             for (int i = 0; i < 12 * 30; i++)
             {
