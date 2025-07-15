@@ -32,10 +32,6 @@
 <input type="checkbox" @bind="Checked" @onclick="TogglePersonCheckBox">
 <label> A Real Person:</label><br>
 @if (Simulant.Victim != null) {
-    <label>Montlhy Income:</label> <input @bind="Simulant.Victim.MontlhyIncome" /> <br>
-    <label>Starting Capital:</label> <input @bind="Simulant.Victim.StartingCapital" /> <br>
-    <label>Wealth Cap:</label> <input @bind="Simulant.Victim.WealthCap" /> <br>
-    <br>
     @Simulant.Victim.Render()
 }
 
@@ -176,7 +172,12 @@
             Balance += MontlhyIncome;
         }
         public override RenderFragment RenderSelf(string _indent) {
-            RenderFragment _runningTotal = @<h4>@(_indent)A Working Person</h4>;
+            RenderFragment _runningTotal = (__builder) => {
+                <h4>@(_indent)A Working Person</h4>
+                <label>Montlhy Income:</label> <input @bind="MontlhyIncome" /> <br>
+                <label>Starting Capital:</label> <input @bind="StartingCapital" /> <br>
+                <label>Wealth Cap:</label> <input @bind="WealthCap" /> <br>
+            };
             return _runningTotal;
         }
 
