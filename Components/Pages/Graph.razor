@@ -35,10 +35,14 @@
     <label>Montlhy Income:</label> <input @bind="Simulant.Victim.MontlhyIncome" /> <br>
     <label>Starting Capital:</label> <input @bind="Simulant.Victim.StartingCapital" /> <br>
     <label>Wealth Cap:</label> <input @bind="Simulant.Victim.WealthCap" /> <br>
+    <br>
+    @Simulant.Victim.Render()
 }
-@code {
-    List<Simulator> Models = [];
 
+
+@code {
+    /// List of used models
+    List<Simulator> Models = [];
     /// the work in progress simulator
     Simulator Simulant = new();
 
@@ -127,6 +131,23 @@
                 return _runningTotal;
             }
         }
+
+        /// returns the rendering of itself in html
+        public RenderFragment Render(string _indent = "") {
+            RenderFragment _runningTotal = RenderSelf(_indent);
+
+            foreach (Asset child in Assets) {
+                _runningTotal += child.Render($"{_indent} ");
+            }
+
+            return _runningTotal;
+        }
+
+        /// renders only its own stuff, no children
+        public virtual RenderFragment RenderSelf(string _indent) {
+            return @<h4>@(_indent)Asset</h4>;
+        }
+
     }
 
     private class SavingsAccount : Asset
@@ -153,6 +174,10 @@
         public override void AddOwnMontlyProfit()
         {
             Balance += MontlhyIncome;
+        }
+        public override RenderFragment RenderSelf(string _indent) {
+            RenderFragment _runningTotal = @<h4>@(_indent)A Working Person</h4>;
+            return _runningTotal;
         }
 
     }
