@@ -61,6 +61,38 @@
         Simulant = new();
     }
 
+    /// Wraps the given content RenderFragment inside an HTML element specified by tagName.
+    /// content: The RenderFragment to be wrapped.
+    /// tagName: The HTML tag name to wrap around the content (e.g., "div", "section").
+    /// Optional dictionary of HTML attributes to add to the wrapping element.
+    /// Keys are attribute names (e.g., "class", "id"), values are attribute values.
+    /// No validation is performed on the tagName or attribute keys/values.
+    /// Use valid HTML tags and attribute names to avoid runtime errors.
+    public static RenderFragment WrapWithElement(
+        RenderFragment content,
+        string tagName,
+        Dictionary<string, object>? attributes = null)
+    {
+        return builder =>
+        {
+            int seq = 0;
+            builder.OpenElement(seq++, tagName);
+
+            // Add attributes if provided
+            if (attributes != null)
+            {
+                foreach (var attr in attributes)
+                {
+                    builder.AddAttribute(seq++, attr.Key, attr.Value);
+                }
+            }
+
+            // Insert the actual content
+            content(builder);
+
+            builder.CloseElement(); // </tagName>
+        };
+    }
 
     private class ChartData
     {
@@ -83,6 +115,21 @@
         /// assets managed by this asset
         public List<Asset> Assets = new();
         /// Advances the balance of the assets and own profit by a month
+
+        /// calculates the recursive ballance of all owned assets + self
+        public double TotalBalance
+        {
+            get
+            {
+                double _runningTotal = Balance;
+                foreach (Asset asset in Assets)
+                {
+                    _runningTotal += asset.TotalBalance;
+                }
+                return _runningTotal;
+            }
+        }
+
         public void AdvanceByMonth()
         {
             foreach (Asset asset in Assets)
@@ -95,7 +142,8 @@
         /// Pure profit excluding assets
         public virtual void AddOwnMontlyProfit()
         {
-            // default balance stays the same
+            // by default balance stays the same
+            // add inflation??
         }
 
         /// Moves `ammount` of money into `destination`
@@ -114,20 +162,6 @@
             destination.Balance += ammount;
         }
 
-        /// calculates the recursive ballance of all owned assets + self
-        public double TotalBalance
-        {
-            get
-            {
-                double _runningTotal = Balance;
-                foreach (Asset asset in Assets)
-                {
-                    _runningTotal += asset.TotalBalance;
-                }
-                return _runningTotal;
-            }
-        }
-
         /// returns the rendering of itself in html
         public RenderFragment Render(string _indent = "") {
             RenderFragment _runningTotal = RenderSelf(_indent);
@@ -135,12 +169,14 @@
             foreach (Asset child in Assets) {
                 _runningTotal += child.Render($"{_indent} ");
             }
+            _runningTotal+=@<div></div>;
 
-            if (_indent == "") {
-                
-            }
-
-            return _runningTotal;
+            // we wrap the elements in a div and offset it to create a hierarchy
+            return WrapWithElement(
+                _runningTotal, 
+                "div", 
+                new Dictionary<string, object> {{ "style" , "margin-left:70px;"}}
+            );
         }
 
         /// renders only its own stuff, no children
@@ -178,9 +214,9 @@
         public override RenderFragment RenderSelf(string _indent) {
             RenderFragment _runningTotal = (__builder) => {
                 <h4>@(_indent)A Working Person</h4>
-                <label>Montlhy Income:</label> <input @bind="MontlhyIncome" /> <br>
-                <label>Starting Capital:</label> <input @bind="StartingCapital" /> <br>
-                <label>Wealth Cap:</label> <input @bind="WealthCap" /> <br>
+                <label>@(_indent)Montlhy Income:</label> <input @bind="MontlhyIncome" /> <br>
+                <label>@(_indent)Starting Capital:</label> <input @bind="StartingCapital" /> <br>
+                <label>@(_indent)Wealth Cap:</label> <input @bind="WealthCap" /> <br>
             };
             return _runningTotal;
         }
