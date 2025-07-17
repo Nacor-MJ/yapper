@@ -282,6 +282,9 @@
                 data.Add(
                     new ChartData(today.AddMonths(i), Victim.TotalBalance)
                 );
+                if (Victim.TotalBalance > WealthGoal) {
+                    break ;
+                }
             }
 
             return data;
