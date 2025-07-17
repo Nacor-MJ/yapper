@@ -47,7 +47,8 @@
         if (Checked) {
             Simulant.Victim = null;
         } else {
-            Simulant.Victim = new();
+            Simulant.Victim = new(null);
+            Simulant.Victim.TriggerRender = StateHasChanged;
         }
     }
     private void Clear()
@@ -114,7 +115,11 @@
         public double Balance;
         /// assets managed by this asset
         public List<Asset> Assets = new();
-        /// Advances the balance of the assets and own profit by a month
+        public Action? TriggerRender { get; set; }
+        private Asset? Parent;
+        public Asset(Asset? parent) {
+            Parent = parent;
+        }
 
         /// calculates the recursive ballance of all owned assets + self
         public double TotalBalance
@@ -130,17 +135,19 @@
             }
         }
 
+        /// Advances the balance of the assets and own profit by a month
         public void AdvanceByMonth()
         {
+            AddOwnMonthlyProfit(Parent);
             foreach (Asset asset in Assets)
             {
                 asset.AdvanceByMonth();
             }
-            AddOwnMontlyProfit();
         }
 
         /// Pure profit excluding assets
-        public virtual void AddOwnMontlyProfit()
+        /// if any investment must be made, it is take from `Victim`
+        public virtual void AddOwnMonthlyProfit(Asset? Victim = null)
         {
             // by default balance stays the same
             // add inflation??
@@ -154,22 +161,38 @@
         {
             if (Balance < ammount)
             {
+                // TODO: do this failure more gracefully
                 throw new System.ArgumentOutOfRangeException(
-                $"Balance : {Balance} is less than requested move ammount {ammount}"
+                    $"Balance : {Balance} is less than requested move ammount {ammount}"
                 );
             }
             Balance -= ammount;
             destination.Balance += ammount;
         }
 
+        private int bab = 0;
         /// returns the rendering of itself in html
-        public RenderFragment Render(string _indent = "") {
-            RenderFragment _runningTotal = RenderSelf(_indent);
+        public RenderFragment Render() {
+            RenderFragment _runningTotal = RenderSelf();
 
             foreach (Asset child in Assets) {
-                _runningTotal += child.Render($"{_indent} ");
+                int seq = 0;
+                _runningTotal += (__builder) => {
+                    __builder.OpenElement(seq++, "li");
+                    __builder.SetKey(child);
+                    @child.Render();
+                    __builder.CloseElement();
+                };
             }
-            _runningTotal+=@<div></div>;
+
+            _runningTotal += (__builder) => {
+                <label>@Assets.Count</label>
+                <br>
+                <label>@bab</label>
+                <br>
+                <button @onclick="() => {Assets.Add((SavingsAccount) new(this)); TriggerRender?.Invoke();}">Sporak</button>
+                <button @onclick="() => bab += 1">shit</button>
+            };
 
             // we wrap the elements in a div and offset it to create a hierarchy
             return WrapWithElement(
@@ -180,8 +203,8 @@
         }
 
         /// renders only its own stuff, no children
-        public virtual RenderFragment RenderSelf(string _indent) {
-            return @<h4>@(_indent)Asset</h4>;
+        public virtual RenderFragment RenderSelf() {
+            return @<h4>Asset</h4>;
         }
 
     }
@@ -190,33 +213,50 @@
     {
         /// The Yearly Interest Rate In %
         private double InterestRate = 5;
+        private double MontlhyInvestment = 0;
+
+        public SavingsAccount(Asset? parent) : base(parent) {}
+
         private double GetMonthlyInterestRate()
         {
             return Math.Pow(1 + InterestRate, 1.0 / 12.0) - 1;
         }
 
-        public override void AddOwnMontlyProfit()
+        public override void AddOwnMonthlyProfit(Asset? Victim)
         {
+            if (Victim == null) {
+                throw new System.ArgumentOutOfRangeException("Victim should not be null for the SavingsAccount");
+            }
+            Victim.Move(MontlhyInvestment, this);
             Balance *= (1 + GetMonthlyInterestRate());
+        }
+        public override RenderFragment RenderSelf() {
+            RenderFragment _runningTotal = (__builder) => {
+                <h4>A Working Person</h4>
+                <label>Interest Rate: </label> <input @bind="InterestRate" /> <br>
+                <label>Monthly Investment: </label> <input @bind="MontlhyInvestment " /> <br>
+            };
+            return _runningTotal;
         }
     }
 
     private class AWorkingPerson : Asset
     {
+        public AWorkingPerson (Asset parent) : base(parent) {}
         public double StartingCapital = 0;
         public double MontlhyIncome = 10_000;
         public double WealthCap = 10_000_000;
 
-        public override void AddOwnMontlyProfit()
+        public override void AddOwnMonthlyProfit(Asset? Victim)
         {
             Balance += MontlhyIncome;
         }
-        public override RenderFragment RenderSelf(string _indent) {
+        public override RenderFragment RenderSelf() {
             RenderFragment _runningTotal = (__builder) => {
-                <h4>@(_indent)A Working Person</h4>
-                <label>@(_indent)Montlhy Income:</label> <input @bind="MontlhyIncome" /> <br>
-                <label>@(_indent)Starting Capital:</label> <input @bind="StartingCapital" /> <br>
-                <label>@(_indent)Wealth Cap:</label> <input @bind="WealthCap" /> <br>
+                <h4>A Working Person</h4>
+                <label>Montlhy Income:</label> <input @bind="MontlhyIncome" /> <br>
+                <label>Starting Capital:</label> <input @bind="StartingCapital" /> <br>
+                <label>Wealth Cap:</label> <input @bind="WealthCap" /> <br>
             };
             return _runningTotal;
         }
@@ -240,7 +280,7 @@
             {
                 Victim.AdvanceByMonth();
                 data.Add(
-                new ChartData(today.AddMonths(i), Victim.TotalBalance)
+                    new ChartData(today.AddMonths(i), Victim.TotalBalance)
                 );
             }
 
