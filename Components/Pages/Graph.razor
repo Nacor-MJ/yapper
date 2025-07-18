@@ -6,9 +6,6 @@
 <PageTitle>Graph</PageTitle>
 
 <h3>Graph</h3>
-<button class="btn btn-primary" @onclick="Clear">clear</button>
-<button class="btn btn-primary" @onclick="AddModel">add model</button>
-<br>
 <SfChart>
     <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" Format="dd MMM" />
     <ChartSeriesCollection>
@@ -20,8 +17,6 @@
     </ChartSeriesCollection>
 </SfChart>
 
-<label>Model count: @Models.Count</label> <br>
-
 @for (int i = 0; i < Models.Count; i++)
 {
     <button type="button">Model @(i + 1)</button>
@@ -29,8 +24,8 @@
     <!-- TODO: make expandable overview of the model, delete just one model -->
 }
 
-<input type="checkbox" @bind="Checked" @onclick="TogglePersonCheckBox">
-<label> A Real Person:</label><br>
+<button class="btn btn-primary" @onclick="Clear">clear all</button>
+<button class="btn btn-primary" @onclick="TogglePersonCheckBox">Add Model</button>
 @if (Simulant.Victim != null) {
     @Simulant.Victim.Render()
 }
@@ -42,24 +37,14 @@
     /// the work in progress simulator
     Simulator Simulant = new();
 
-    private bool Checked = false;
     private void TogglePersonCheckBox() {
-        if (Checked) {
-            Simulant.Victim = null;
-        } else {
-            Simulant.Victim = new(null);
-            Simulant.Victim.TriggerRender = StateHasChanged;
-        }
+        Simulant.Victim = null;
+        Simulant.Victim = new(null);
+        Simulant.Victim.TriggerRender = StateHasChanged;
     }
     private void Clear()
     {
         Models = [];
-    }
-    private void AddModel()
-    {
-        Checked=false;
-        Models.Add(Simulant);
-        Simulant = new();
     }
 
     /// Wraps the given content RenderFragment inside an HTML element specified by tagName.
@@ -134,6 +119,12 @@
                 return _runningTotal;
             }
         }
+        public void ReRender() {
+            // Only one that has TriggerRender defined is the root 
+            // everyone else has a parent
+            TriggerRender?.Invoke();
+            Parent?.ReRender();
+        }
 
         /// Advances the balance of the assets and own profit by a month
         public void AdvanceByMonth()
@@ -170,7 +161,6 @@
             destination.Balance += ammount;
         }
 
-        private int bab = 0;
         /// returns the rendering of itself in html
         public RenderFragment Render() {
             RenderFragment _runningTotal = RenderSelf();
@@ -185,20 +175,22 @@
                 };
             }
 
+            var AddSporak = () => {
+                Assets.Add((SavingsAccount) new(this)); 
+                ReRender();
+            };
+
             _runningTotal += (__builder) => {
-                <label>@Assets.Count</label>
-                <br>
-                <label>@bab</label>
-                <br>
-                <button @onclick="() => {Assets.Add((SavingsAccount) new(this)); TriggerRender?.Invoke();}">Sporak</button>
-                <button @onclick="() => bab += 1">shit</button>
+                <button class="btn btn-primary" @onclick="AddSporak">Sporak</button>
             };
 
             // we wrap the elements in a div and offset it to create a hierarchy
             return WrapWithElement(
                 _runningTotal, 
                 "div", 
-                new Dictionary<string, object> {{ "style" , "margin-left:70px;"}}
+                new Dictionary<string, object> {
+                    { "style" , "margin-left:70px;border-style:dotted;border-color:blue;"}
+                }
             );
         }
 
@@ -213,7 +205,7 @@
     {
         /// The Yearly Interest Rate In %
         private double InterestRate = 5;
-        private double MontlhyInvestment = 0;
+        private double MontlhyInvestment = 5_000;
 
         public SavingsAccount(Asset? parent) : base(parent) {}
 
@@ -232,7 +224,7 @@
         }
         public override RenderFragment RenderSelf() {
             RenderFragment _runningTotal = (__builder) => {
-                <h4>A Working Person</h4>
+                <h4>Savings Account</h4>
                 <label>Interest Rate: </label> <input @bind="InterestRate" /> <br>
                 <label>Monthly Investment: </label> <input @bind="MontlhyInvestment " /> <br>
             };
@@ -242,7 +234,7 @@
 
     private class AWorkingPerson : Asset
     {
-        public AWorkingPerson (Asset parent) : base(parent) {}
+        public AWorkingPerson (Asset? parent) : base(parent) {}
         public double StartingCapital = 0;
         public double MontlhyIncome = 10_000;
         public double WealthCap = 10_000_000;
